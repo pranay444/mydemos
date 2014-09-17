@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <meta name="viewport" content="width=device-width; height=device-height; initial-scale=1.0; user-scalable=0;">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="author" content="Pranay">
+  <meta name="version" content="1.1">
+<title>BalloonTyper :: Powered by HTML5</title>
+
+
+<style type="text/css">
+*{margin:0;padding:0;}
+body{font-family:"Trebuchet MS", Arial, Helvetica, sans-serif; font-size:20px; font-weight:bold;}
+#container{position:relative;margin:0 auto;width:1024px;}
+#screen{border:1px solid #000;}
+#levelText{
+	position:absolute; 
+	top:145px; 
+	left:480px;
+  	opacity: 0;              /* CSS3 */
+  	-moz-opacity: 0;         /* legacy Firefox */
+  	-khtml-opacity: 0;       /* legacy Safari/Konqueror */
+  	filter: alpha(opacity=0); /* MSIE */
+}
+</style>
+
+</head>
+
+<body>
+<div id="container">
+<br><br>
+<div id="levelText">Level1</div>
+<canvas id="screen" width="1024" height="700">
+<p align="center"><strong>Your Browser does not support canvas. Try running me in Firefox, Safari or Chrome.</strong></p>
+</canvas>
+</div>
+
+<script type="text/javascript">
+
+var canvas = null;
+var context = null;
+
+var score = 0;
+var scorex = 125;
+var scorey = 692;
+
+var lives = 3;
+var lifex = 725;
+var lifey = 692;
+
+var level = 1;
+var levelx = 445;
+var levely = 692;
+
+var leveltimer = 100;
+
+var balloonxs = [0,245,385,560,490];
+var balloonys = [551,551,551,551,551];
+
+var refreshIntervalId;
+
+var saved_rects = [null, null, null, null, null];
+
+var balloonpos = new Array();
+
+balloonpos[0] = new Array(5);
+balloonpos[0] = [ 0, 270, 540, 810]; 
+
+balloonpos[1] = new Array(4);
+balloonpos[1] = [ 54, 324, 594, 864];
+
+balloonpos[2] = new Array(4);
+balloonpos[2] = [ 108, 378, 648, 918];
+
+balloonpos[3] = new Array(4);
+balloonpos[3] = [ 162, 432, 702, 972];
+
+balloonpos[4] = new Array(4);
+balloonpos[4] = [ 216, 486, 756];
+
+var ballooncol1 = [ "#f1dbea" , "#f7f4f4" , "#ebf4f1" , "#edf2f8" , "#f5eef8"];
+var ballooncol2 = [ "#e982bc" , "#eb959e" , "#96ce8b" , "#90b2de" , "#be96c5"];
+var ballooncol3 = [ "#e756a7" , "#ea4e59" , "#76c047" , "#5985c4" , "#8e5ba6"];
+
+var alpha = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
+
+var alphabets = ["", "", "", "", ""];
+
+var ballooncolors1 = [ "#f1dbea" , "#f7f4f4" , "#ebf4f1" , "#edf2f8" , "#f5eef8"];
+var ballooncolors2 = [ "#e982bc" , "#eb959e" , "#96ce8b" , "#90b2de" , "#be96c5"]; 
+var ballooncolors3 = [ "#e756a7" , "#ea4e59" , "#76c047" , "#5985c4" , "#8e5ba6"];
+
+var startballoonx = 412;
+var startballoony = 50;
+var startballoonradius = 17;
+var startballoonbool = true;
+var balloonintervalid;
+
+var states = {
+	INIT: "INIT",
+	PLAYING: "PLAYING",
+	WON: "WON",
+	GAMEOVER: "GAMEOVER"
+};
+
+var levels = {
+	LEVEL1: 1,
+	LEVEL2: 2,
+	LEVEL3: 3,
+	LEVEL4: 4,
+	LEVEL5: 5		
+};
+
+var state = states.INIT;
+
+window.onload = Init();
+
+function Init(){
+	canvas = document.getElementById("screen");
+	context = canvas.getContext("2d");
+
+	addKeyboardListener();
+	drawbackground();
+	drawwelcomescreen();
+
+}
+
+function drawwelcomescreen(){
+
+	var textx = 512;
+	context.textAlign = "center";
+	context.fillStyle = "#000";
+	context.font = "24px Trebuchet MS";
+	context.fillText("Balloon Typer", textx , 60);
+	context.fillStyle = "#fff";			
+	context.font = "20px Trebuchet MS";		
+	context.fillText("Instructions", textx, 565)	
+	context.font = "16px Trebuchet MS";	
+	context.fillText("Type the letter in the balloon before they reach top of the screen.", textx, 595)
+	context.fillText("Use alphabets keys to type the letter.", textx, 615)		
+	context.font = "14px Trebuchet MS";
+	context.fillText("Press Enter to Start", textx, 680)
+	
+	balloonintervalid = setInterval("animatedballoon()",300);
+
+}
+function animatedballoon(){
+
+	var startingAngle = 1 * Math.PI;
+    var endingAngle = 2 * Math.PI;
+	
+	context.clearRect(startballoonx-startballoonradius,startballoony-startballoonradius,35,48);
+	
+	context.rect(startballoonx-startballoonradius,startballoony-startballoonradius,35,48);
+	context.fillStyle = "#c8e3ff";
+	context.fill();
+	
+	if(startballoonbool){
+	startballoony = startballoony - 2;	
+	}
+	else{
+	startballoony = startballoony + 2;
+	}
+	
+	if(startballoony == 40){
+	startballoonbool = false;
+	}
+	else if(startballoony == 50){
+	startballoonbool = true;
+	}
+	
+	context.beginPath();
+	context.moveTo(startballoonx,startballoony);
+	context.arc(startballoonx,startballoony,startballoonradius,startingAngle,endingAngle,false);
+	context.moveTo(startballoonx-startballoonradius,startballoony);
+	context.quadraticCurveTo(startballoonx+5,startballoony+52,startballoonx+startballoonradius,startballoony);
+	context.rect(startballoonx+5,startballoony+25,5,2);
+	context.rect(startballoonx+3,startballoony+25,2,5);
+	context.closePath();
+	
+	var grd = context.createRadialGradient(startballoonx-2,startballoony-2,1,startballoonx-2,startballoony-2,15);
+	grd.addColorStop(0,ballooncolors1[0]);
+	grd.addColorStop(0.5,ballooncolors2[0]);	
+	grd.addColorStop(1,ballooncolors3[0]);
+	context.fillStyle = grd;				
+	
+	context.fill();
+}
+
+/*Handles Keyboard Events*/
+function addKeyboardListener(){
+	document.onkeydown = function(evt){
+		handlekeydown(evt);
+	}
+}
+
+function handlekeydown(evt){
+	keycode = evt.keyCode;
+	
+	if(keycode == 13){
+		if(state == states.INIT){
+			StartGame();
+		}
+		else if(state == states.GAMEOVER){
+			score = 0;
+			lives = 3;
+			level = 1;
+			state = states.PLAYING;
+			StartGame();			
+		}
+		else if(state == states.PLAYING){
+		// do nothing
+		}
+	}
+	else if(keycode >= 65 && keycode <= 90){
+		if(state == states.PLAYING){	
+			var character = String.fromCharCode(keycode);
+			if(character == alphabets[0]){
+			 score = score + 100;
+			 alphabets[0] = null;
+			 drawscoreboard();
+			 resetballoonpos(0);
+			}
+			else if(character == alphabets[1]){
+			 score = score + 100;
+			 alphabets[1] = null;		 
+			 drawscoreboard();
+			 resetballoonpos(1);
+			}
+			else if(character == alphabets[2]){
+			 score = score + 100;
+			 alphabets[2] = null;		 
+			 drawscoreboard();
+			 resetballoonpos(2);
+			}		
+			else if(character == alphabets[3]){
+			 score = score + 100;
+			 alphabets[3] = null;		 
+			 drawscoreboard();
+			 resetballoonpos(3);
+			}		
+			else if(character == alphabets[4]){
+			 score = score + 100;
+			 alphabets[4] = null;		 
+			 drawscoreboard();
+			 resetballoonpos(4);
+			}	
+		 }
+	}
+}
+
+/*Draws ScoreBoard*/
+function drawscoreboard(){
+	if(score >= 3000 && level == 1){
+		leveltimer = leveltimer - 55;
+		level = level + 1;
+		showLevel();
+	}
+	if(score >= 6000 && level == 2){
+		leveltimer = leveltimer - 55;	
+		level = level + 1;
+		showLevel();		
+	}
+	if(score >= 9000 && level == 3){
+		leveltimer = leveltimer - 55;	
+		level = level + 1;
+		showLevel();		
+	}		
+	if(score >= 12000 && level == 4){
+		leveltimer = leveltimer - 55;	
+		level = level + 1;
+		showLevel();		
+	}		
+	if(score >= 15000 && level == 5){
+		leveltimer = leveltimer - 55;	
+		level = level + 1;
+		showLevel();		
+	}			
+	context.beginPath();
+	context.rect(0,scorey-22,1024,30);
+	context.fillStyle = "#000";	
+	context.fill();
+	context.closePath();
+	context.beginPath();
+	context.font = "24px Trebuchet MS";
+	context.textAlign = "left";
+	context.fillStyle = "#fff";
+	context.fillText("Score",scorex - 75, scorey);
+	context.fillText(score, scorex, scorey);
+	context.fillText("Level",levelx - 75, levely);	
+	context.fillText(level, levelx, levely);
+	context.fillText("Lives",lifex - 75, lifey);		
+	context.fillText(lives,lifex, lifey);			
+	context.closePath();
+}
+
+/*Starts Game*/
+function StartGame(){
+	state = states.PLAYING;
+	clearInterval(balloonintervalid);
+	drawbackground();	
+	drawscoreboard();	
+	refreshIntervalId = setInterval("updatestage()",100);
+}
+
+/*Update Stages*/
+function updatestage(){
+	if(level >= levels.LEVEL1){
+		drawballoon(0);
+	}
+	if(level >= levels.LEVEL2){
+		drawballoon(1);	
+	}
+	if(level >= levels.LEVEL3){
+		drawballoon(2);	
+	}
+	if(level >= levels.LEVEL4){
+		drawballoon(3);			
+	}	
+	if(level >= levels.LEVEL5){
+		drawballoon(4);			
+	}	
+}
+
+/*Draws Balloon*/
+function drawballoon(num){
+		if(balloonys[num] < 551){	
+		context.clearRect(balloonxs[num]+11,balloonys[num],46,70);		
+		context.putImageData(saved_rects[num],balloonxs[num]+11,balloonys[num]);	
+		balloonys[num] = balloonys[num] - 7;
+		}
+		else if(balloonys[num] == 551){
+		balloonys[num] = balloonys[num] - 1;		
+		}	
+		
+		var middlex = balloonxs[num] + 35;
+		var middley = balloonys[num] + 25;
+		
+		
+		var startingAngle = 1 * Math.PI;
+		var endingAngle = 3 * Math.PI;
+		var counterclockwise = false;	
+	
+		context.beginPath();
+		context.moveTo(balloonxs[num]+12,balloonys[num]+25);
+		context.arc(middlex,middley,22,startingAngle,endingAngle,counterclockwise);
+		context.moveTo(balloonxs[num]+57,balloonys[num]+22);
+		context.quadraticCurveTo(middlex+3,middley+74,balloonxs[num]+12,balloonys[num]+22);
+		context.rect(middlex+5,middley+34,5,2);
+		context.rect(middlex+3,middley+34,2,5);
+		context.closePath();
+		
+		var grd = context.createRadialGradient(middlex-2,middley-2,1,middlex-2,middley-2,15);
+		grd.addColorStop(0,ballooncolors1[num]);
+		grd.addColorStop(0.5,ballooncolors2[num]);	
+		grd.addColorStop(1,ballooncolors3[num]);
+		context.fillStyle = grd;			
+				
+		if(balloonys[num] > 35){
+		saved_rects[num] = context.getImageData(balloonxs[num]+11,balloonys[num],46,70);
+		}
+		
+		context.fill();	
+		
+		context.beginPath();		
+		context.textAlign = "center";
+		context.fillStyle = "#000";
+		context.font = "30px Arial";
+		if(alphabets[num] == ""){
+		var alphapos = Math.floor(Math.random() * 26);
+		alphabets[num] = alpha[alphapos];
+		}
+		context.fillText(alphabets[num],balloonxs[num]+34,balloonys[num]+40);	
+		context.closePath();
+		
+		if(balloonys[num] < 8){
+			lives = lives - 1;
+			drawscoreboard();
+			resetballoonpos(num);
+			if(lives == 0){
+				clearInterval(refreshIntervalId);
+				state = states.GAMEOVER;
+				gameover();
+			}			
+		}
+}
+
+/*Resets Balloons X position*/
+function resetballoonpos(num){
+		context.clearRect(balloonxs[num]+11,balloonys[num],46,70);		
+		context.putImageData(saved_rects[num],balloonxs[num]+11,balloonys[num]);	
+		if(balloonxs[num] > 1000){
+		balloonxs[num] = 0;	
+		}
+		else{
+		var rnd = Math.floor(Math.random() * balloonpos[0,num].length);	
+		balloonxs[num] = balloonpos[0,num][rnd];
+		var alphapos = Math.floor(Math.random() * 26);
+		alphabets[num] = alpha[alphapos];
+		var colpos = Math.floor(Math.random() * 5);
+		ballooncolors1[num] = ballooncol1[colpos];
+		ballooncolors2[num] = ballooncol2[colpos];
+		ballooncolors3[num] = ballooncol3[colpos];		
+		}
+		balloonys[num] = 551;
+}
+
+/*GameOver Screen*/
+function gameover(){
+	context.clearRect(0,0,1024,1000);
+	drawbackground();	
+	var textx = 512;
+	context.textAlign = "center";
+	context.fillStyle = "#000";
+	context.font = "24px Trebuchet MS";
+	context.fillText("Game Over", textx , 60);
+	context.fillStyle = "#fff";			
+	context.font = "20px Trebuchet MS";		
+	context.fillText("Score", textx, 565)	
+	context.font = "24px Trebuchet MS";			
+	context.fillText(score, textx, 610)
+	context.font = "11px Trebuchet MS";
+	context.fillText("Press Enter to play again", textx, 680)	
+}
+
+
+/*Draws Background*/
+function drawbackground(){
+	
+	/*Background Blue Color*/
+	context.beginPath();
+	context.rect(0,0,1024,700);	
+	context.fillStyle = "#c8e3ff";
+	context.fill();
+	context.closePath();
+	
+	/*Background Buildings*/
+	drawbackgroundbuilding(7,145,65,370);
+	drawbackgroundbuilding(218,120,81,279);
+	drawbackgroundbuilding(348,172,93,351);
+	drawbackgroundbuilding(520,151,78,360);
+	drawbackgroundbuilding(697,120,81,401);
+	drawbackgroundbuilding(890,151,78,246);	
+	
+	/*sidewalk*/
+	context.beginPath();
+	context.rect(0,516,1024,17 );	
+	context.fillStyle = "#c3bfba";
+	context.fill();
+	context.closePath();	
+	
+	/*sidewalk line*/	
+	context.beginPath();
+	context.moveTo(0,532);	
+	context.lineTo(1024,532);
+	context.lineWidth = 2;
+	context.strokeStyle = "#d6d7d9";	
+	context.stroke();
+	context.closePath();
+
+	context.beginPath();
+	context.moveTo(0,534);	
+	context.lineTo(1024,534);
+	context.lineWidth = 2;
+	context.strokeStyle = "#9e9fa0";	
+	context.stroke();
+	context.closePath();
+
+	context.beginPath();
+	context.moveTo(0,536);	
+	context.lineTo(1024,536);
+	context.lineWidth = 2;
+	context.strokeStyle = "#5e5d63";	
+	context.stroke();
+	context.closePath();
+	
+
+	/*Road*/
+	context.beginPath();
+	context.rect(0,537,1024,163 );	
+	context.fillStyle = "#6f6f6f";
+	context.fill();
+	context.closePath();	
+	
+	/*foreground buildings*/
+	drawbuilding1(6,333);
+	drawbuilding2(79,333);
+	drawbuilding3(191,333);
+	drawbuilding4(390,333);
+	drawbuilding4(490,333);
+	drawbuilding2(608,333);
+	drawbuilding4(720,333);
+	drawbuilding3(838,333);	
+	
+	/*Black Line after Steps*/
+	context.beginPath();
+	context.moveTo(0,514);	
+	context.lineTo(1024,514);
+	context.lineWidth = 3;
+	context.strokeStyle = "#4a4d3f";	
+	context.stroke();
+	context.closePath();	
+	
+}
+
+function drawbackgroundbuilding(x,y,width,height){
+	context.beginPath();
+	context.rect(x,y,width,height);	
+	context.fillStyle = "#b1cfeb";
+	context.fill();
+	context.strokeStyle = "#afc7e1";
+	context.lineWidth = 3;
+	context.stroke();
+	context.closePath();	
+}
+
+function drawbuilding4(x,y){
+	var ventx = x + 27;
+	var venty = y - 10;
+	var buildwidth = 103;
+	var layerheight = 26; 
+	
+	drawvent(ventx,venty,2); // 1 is the order of the chimney first small and big then
+	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#af6363";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 5;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#fdfdfe";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 2;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#435b45";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 123;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#99b098";
+	context.fill();	
+	context.closePath();
+	
+	var windowx1 = x+11;
+	var windowx2 = x+41;
+	var windowx3 = x+72;
+	
+	var windowy1 = y+8;
+	var windowy2 = y+47;
+	var windowy3 = y+89;	
+	
+	var windoww = 19;
+	var windowh = 26;	
+	
+	var colorcode = "#fafffc";
+	
+	drawwindow(windowx1,windowy1,windoww,windowh,colorcode);
+	drawwindow(windowx2,windowy1,windoww,windowh,colorcode);
+	drawwindow(windowx3,windowy1,windoww,windowh,colorcode);
+	
+	
+	drawwindow(windowx1,windowy2,windoww,windowh,colorcode);
+	drawwindow(windowx2,windowy2,windoww,windowh,colorcode);
+	drawwindow(windowx3,windowy2,windoww,windowh,colorcode);
+	
+	
+	drawwindow(windowx1,windowy3,windoww,windowh,colorcode);
+	drawwindow(windowx3,windowy3,windoww,windowh,colorcode);
+	
+	drawdoor(x+41,y+91);	
+	
+	y = y + layerheight;
+	layerheight = 2;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#f5f7fc ";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 2;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#685a6c ";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 19;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#9f8ca0";
+	context.fill();	
+	context.closePath();
+	
+	drawsteps(x+38,y-13,1);
+}
+
+
+function drawbuilding3(x,y){
+	var ventx = x + 41;
+	var venty = y - 10;
+	var buildwidth = 185;
+	var layerheight = 27;
+
+	drawvent(ventx,venty,1); // 1 is the order of the chimney first small and big then
+	ventx = ventx + 108;
+	drawvent(ventx,venty,2); // 2 first big and then small
+	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#7d7d7d";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 5;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#feffff";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 124;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#fecde2 ";
+	context.fill();	
+	context.closePath();
+	
+	var windowx1 = x+4;
+	var windowx2 = x+43;
+	var windowx3 = x+82;
+	var windowx4 = x+121;
+	var windowx5 = x+160;	
+	
+	var windowy1 = y+5;
+	var windowy2 = y+46;
+	var windowy3 = y+86;	
+	
+	var windoww = 19;
+	var windowh = 26;	
+	
+	var colorcode = "#fafffc";
+	
+	drawwindow(windowx1,windowy1,windoww,windowh,colorcode);
+	drawwindow(windowx2,windowy1,windoww,windowh,colorcode);
+	drawwindow(windowx3,windowy1,windoww,windowh,colorcode);
+	drawwindow(windowx4,windowy1,windoww,windowh,colorcode);
+	drawwindow(windowx5,windowy1,windoww,windowh,colorcode);	
+	
+	drawwindow(windowx1,windowy2,windoww,windowh,colorcode);
+	drawwindow(windowx2,windowy2,windoww,windowh,colorcode);
+	drawwindow(windowx3,windowy2,windoww,windowh,colorcode);
+	drawwindow(windowx4,windowy2,windoww,windowh,colorcode);
+	drawwindow(windowx5,windowy2,windoww,windowh,colorcode);	
+	
+	
+	drawwindow(windowx1,windowy3,windoww,windowh,colorcode);
+	drawwindow(windowx3,windowy3,windoww,windowh,colorcode);	
+	drawwindow(windowx5,windowy3,windoww,windowh,colorcode);	
+
+	drawdoor(x+42,y+88);
+	drawdoor(x+121,y+88);
+	
+	y = y + layerheight;
+	layerheight = 2;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#f5f7fc ";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 2;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#575875 ";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 19;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#9c9cb3";
+	context.fill();	
+	context.closePath();
+	
+	drawsteps(x+39,y-17,2);
+	drawsteps(x+118,y-17,2);	
+
+}
+
+function drawbuilding2(x,y){
+	var ventx = x + 25;
+	var venty = y - 11;
+	var buildwidth = 98;
+	var layerheight = 35;
+
+	drawvent(ventx,venty,1);
+	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#9c6465";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 5;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#fdfafc";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 114;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#ff9fa0 ";
+	context.fill();	
+	context.closePath();
+	
+	var windowx1 = x+10;
+	var windowx2 = x+41;
+	var windowx3 = x+70;
+	
+	var windowy1 = y+5;
+	var windowy2 = y+40;
+	var windowy3 = y+79;	
+	
+	var windoww = 19;
+	var windowh = 26;
+	
+	var colorcode = "#fafffc";
+	
+	drawwindow(windowx1,windowy1,windoww,windowh,colorcode);
+	drawwindow(windowx2,windowy1,windoww,windowh,colorcode);
+	drawwindow(windowx3,windowy1,windoww,windowh,colorcode);	
+	
+	drawwindow(windowx1,windowy2,windoww,windowh,colorcode);
+	drawwindow(windowx2,windowy2,windoww,windowh,colorcode);
+	drawwindow(windowx3,windowy2,windoww,windowh,colorcode);
+	
+	drawwindow(windowx1,windowy3,windoww,windowh,colorcode);
+	drawwindow(windowx3,windowy3,windoww,windowh,colorcode);	
+	
+	drawdoor(x+40,y+81);
+	
+	y = y + layerheight;
+	layerheight = 2;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#ffeceb ";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 2;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#5f5a6f ";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 22;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#b4b3b5 ";
+	context.fill();	
+	context.closePath();	
+	
+	drawsteps(x+37,y-14,2);
+}
+
+function drawbuilding1(x,y){
+
+	var ventx = x + 5;
+	var venty = y - 12;
+	var buildwidth = 64;
+	var layerheight = 21;
+	
+	drawvent(ventx,venty,2);
+	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#9a9b9d";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 5;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#f9fffa";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 2;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#d8ae86";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 128;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#f6e0b7";
+	context.fill();	
+	context.closePath();	
+	
+	var windowx1 = x+9;
+	var windowx2 = x+39;
+	
+	var windowy1 = y+7;
+	var windowy2 = y+47;
+	var windowy3 = y+92;	
+	
+	var windoww = 19;
+	var windowh = 27;
+	
+	var colorcode = "#f9fed5";
+	
+	drawwindow(windowx1,windowy1,windoww,windowh,colorcode);
+	drawwindow(windowx2,windowy1,windoww,windowh,colorcode);
+	
+	drawwindow(windowx1,windowy2,windoww,windowh,colorcode);
+	drawwindow(windowx2,windowy2,windoww,windowh,colorcode);
+	
+	drawwindow(windowx2,windowy3,windoww,windowh,colorcode);	
+	
+	drawdoor(x+10,y+93);	
+	
+	y = y + layerheight;
+	layerheight = 2;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#fffff1";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 2;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#646074";
+	context.fill();	
+	context.closePath();
+	
+	y = y + layerheight;
+	layerheight = 22;	
+	context.beginPath();
+	context.rect(x,y,buildwidth,layerheight);
+	context.fillStyle = "#9c9c9c";
+	context.fill();	
+	context.closePath();	
+	
+	drawsteps(x+7,y-14,2);	
+	
+}
+
+function drawvent(ventx,venty,pos){
+	
+	if(pos == 1){
+	context.beginPath();
+	context.rect(ventx,venty,11,4);
+	context.fillStyle = "#633d35";
+	context.fill();
+	context.closePath();
+	
+	context.beginPath();
+	context.rect(ventx+2,venty+4,7,7);
+	context.fillStyle = "#fefdff";
+	context.fill();
+	context.closePath();
+	
+	context.beginPath();
+	context.rect(ventx+13,venty-4,11,4);
+	context.fillStyle = "#633d35";
+	context.fill();
+	context.closePath();
+	
+	context.beginPath();
+	context.rect(ventx+15,venty,7,11);
+	context.fillStyle = "#fefdff";
+	context.fill();
+	context.closePath();
+	}
+	else if(pos == 2){
+	context.beginPath();
+	context.rect(ventx,venty-4,11,4);
+	context.fillStyle = "#633d35";
+	context.fill();
+	context.closePath();
+	
+	context.beginPath();
+	context.rect(ventx+2,venty,7,11);
+	context.fillStyle = "#fefdff";
+	context.fill();
+	context.closePath();
+	
+	context.beginPath();
+	context.rect(ventx+13,venty,11,4);
+	context.fillStyle = "#633d35";
+	context.fill();
+	context.closePath();
+	
+	context.beginPath();
+	context.rect(ventx+15,venty+4,7,7);
+	context.fillStyle = "#fefdff";
+	context.fill();
+	context.closePath();		
+	}
+	
+}
+
+function drawsteps(x,y,no){
+
+	var x2 = x + 23;
+	
+	var stepx = x+3;
+	var stepy = y+12;
+	var stepheight;
+	
+	if(no == 1){
+		stepheight = 33;
+	}
+	else if(no == 2){
+		stepheight = 36;		
+	}
+	
+  	context.beginPath();
+	context.rect(x,y,3,stepheight);
+	context.rect(x2,y,3,stepheight);	
+	context.fillStyle = "#fdfef6";
+	context.fill();
+	context.closePath();
+	
+	context.beginPath();
+	context.moveTo(stepx,stepy);
+	context.lineTo(x2,stepy);
+	context.lineWidth = 1;
+	context.strokeStyle = "#fdfef6";
+	context.stroke();
+	
+	context.moveTo(stepx,stepy+1);
+	context.lineTo(x2,stepy+1);	
+	context.lineWidth = 1;	
+	context.strokeStyle = "#e4e7d3";
+	context.stroke();
+	context.closePath();
+	
+	context.beginPath();	
+	context.rect(stepx,stepy,20,3);
+	context.fillStyle = "#ceccb3";
+	context.fill();
+	context.closePath();
+	
+	context.beginPath();
+	stepy = stepy + 3;
+	context.rect(stepx,stepy,20,1);
+	context.fillStyle = "#efefcf";
+	context.fill();
+	stepy = stepy + 1;
+	context.closePath();
+	
+	context.beginPath();
+	context.rect(stepx,stepy,20,3);
+	context.fillStyle = "#ceccb3";
+	context.fill();
+	context.closePath();
+	
+	context.beginPath();
+	stepy = stepy + 3;
+	context.rect(stepx,stepy,20,1);
+	context.fillStyle = "#efefcf";
+	context.fill();
+	stepy = stepy + 1;
+	context.closePath();
+	
+	context.beginPath();
+	context.rect(stepx,stepy,20,3);
+	context.fillStyle = "#ceccb3";
+	context.fill();
+	context.closePath();
+	
+	context.beginPath();
+	stepy = stepy + 3;
+	context.rect(stepx,stepy,20,1);
+	context.fillStyle = "#efefcf";
+	context.fill();
+	stepy = stepy + 1;
+	context.closePath();
+	
+	context.beginPath();
+	context.rect(stepx,stepy,20,3);
+	context.fillStyle = "#ceccb3";
+	context.fill();
+	context.closePath();
+	
+	context.beginPath();
+	stepy = stepy + 3;
+	context.rect(stepx,stepy,20,1);
+	context.fillStyle = "#efefcf";
+	context.fill();
+	stepy = stepy + 1;
+	context.closePath();
+	
+	context.beginPath();
+	context.rect(stepx,stepy,20,3);
+	context.fillStyle = "#ceccb3";
+	context.fill();
+	context.closePath();
+	
+	context.beginPath();
+	stepy = stepy + 3;
+	context.rect(stepx,stepy,20,1);
+	context.fillStyle = "#efefcf";
+	context.fill();
+	stepy = stepy + 1;
+	context.closePath();
+	
+	if(no == 2){
+	context.beginPath();
+	context.rect(stepx,stepy,20,3);
+	context.fillStyle = "#ceccb3";
+	context.fill();
+	context.closePath();
+	
+	context.beginPath();
+	stepy = stepy + 3;
+	context.rect(stepx,stepy,20,1);
+	context.fillStyle = "#efefcf";
+	context.fill();
+	stepy = stepy + 1;
+	context.closePath();		
+	}
+
+}
+
+function drawwindow(x,y,wwidth,wheight,colorcode){
+	
+	var glassfirstx1 = x + 2;
+	var glassfirsty1 = y + 3;
+	
+	var glasssecondx2 = x + 10;
+	var glasssecondy3 = y + 14;
+		
+	var glasswidth = 7;
+	var glassheight = 10;
+	
+	
+	context.beginPath();
+	context.rect(x,y,wwidth,wheight);
+	context.fillStyle = colorcode;
+	context.fill();
+	context.closePath();
+	
+	context.beginPath();
+	context.rect(glassfirstx1,glassfirsty1,glasswidth,glassheight);
+	context.rect(glasssecondx2,glassfirsty1,glasswidth,glassheight);	
+	context.rect(glassfirstx1,glasssecondy3,glasswidth,glassheight);	
+	context.rect(glasssecondx2,glasssecondy3,glasswidth,glassheight);	
+	context.fillStyle = "#beeefa";
+	context.fill();
+	context.closePath();
+	
+}
+
+function drawdoor(x,y){
+	
+	var x2 = x + 29;
+	var middlex = x + 10;
+	var middley = y - 8;
+	
+	var startingAngle = 1 * Math.PI;
+    var endingAngle = 2 * Math.PI;
+    var counterclockwise = false;	
+	
+	context.beginPath();
+	context.moveTo(x,y)
+	context.arc(middlex,y,10,startingAngle,endingAngle,counterclockwise);
+	context.lineTo(x,y);
+	context.fillStyle = "#beeefa";
+	context.strokeStyle = "#fffde0";
+	context.fill();
+	context.stroke();
+	context.closePath();
+	
+	context.beginPath();
+	context.rect(x,y+1,20,35);
+	context.fillStyle = "#823514";	
+	context.strokeStyle = "#fffde0";
+	context.fill();
+	context.stroke();	
+	context.closePath();
+	
+	var glassx1 = x + 3;
+	var glassx2 = x + 11;
+	var glassy = y + 4;
+	var glasswidth = 6;
+	var glassheight = 22;
+	
+	context.beginPath();
+	context.rect(glassx1,glassy,glasswidth,glassheight);
+	context.fillStyle = "#beeefa";
+	context.fill();	
+	context.closePath();
+	
+	context.beginPath();
+	context.rect(glassx2,glassy,glasswidth,glassheight);
+	context.fillStyle = "#beeefa";
+	context.fill();	
+	context.closePath();	
+	
+}
+
+
+/*Displays the level*/
+
+var duration = 1000;  /* 1000 millisecond fade = 1 sec */
+var steps = 20;       /* number of opacity intervals   */
+var delay = 5000;     /* 5 sec delay before fading out */
+
+function showLevel(){
+	setText();
+	fadeIn();
+}
+function setText(){
+	document.getElementById("levelText").style.display = "block";	
+	document.getElementById("levelText").innerHTML = "Level"+level;	
+}
+function hideText(){
+	document.getElementById("levelText").style.display = "none";
+}
+function fadeIn(){ 
+  for (i = 0; i <= 1; i += (1 / steps)) {
+    setTimeout("setOpacity(" + i + ")", i * duration);
+  }
+  setTimeout("fadeOut()", delay);	  
+}
+function fadeOut(){
+  for (i = 0; i <= 1; i += (1 / steps)) {
+    setTimeout("setOpacity(" + (1 - i) + ")", i * duration);
+	console.log(i * duration);
+  }  
+  setTimeout("hideText()", 200);  
+}
+function setOpacity(levelval) {
+  var element = document.getElementById("levelText");	
+  element.style.opacity = levelval;
+  element.style.MozOpacity = levelval;
+  element.style.KhtmlOpacity = levelval;
+  element.style.filter = "alpha(opacity=" + (levelval * 100) + ");";
+}
+</script>
+
+</body>
+</html>
