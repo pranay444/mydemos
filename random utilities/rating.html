@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Simple Rating Example</title>
+	<style>
+		.rating_bar {
+		width: 125px;
+		height:25px;
+		background: url('http://healthcare.utah.edu/fad/images/star-bar.png') 0 0 repeat-x;
+		margin: 5px 5px 5px 0;
+		}
+		.rating_bar div {
+			height: 25px;
+			background: url('http://healthcare.utah.edu/fad/images/star-bar.png') 0 -25px repeat-x;
+		}
+		
+	</style>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+</head>
+
+<body>
+	<div class='container'>
+		<div class='row'>
+			<div class='input'> Rating: <input type="number" size="1" name="satisfaction" min="0" max="5"   required> </div>
+		</div>	
+		<div class="rating_bar">
+			<div style=""></div>
+		</div>
+
+	</div>
+</body>
+<script>
+	$(document).ready(function(){
+		var input = $('.input').find('input').val();
+		displayRating(input);
+		$('.input').find('input').change(function(){
+		input = $('.input').find('input').val();
+		displayRating(input);
+			
+		});
+
+	});
+
+	function displayRating (input){
+		if(parseFloat(input) <= 5 && parseFloat(input) >= 0){
+			var width = ((parseFloat(input)/5)*100) +'%';
+			$('.rating_bar').find('div').css('width', width);
+		}else{
+			alert('Please enter input between 0 to 5')
+		}
+			
+	};
+</script>
+
+</html>
